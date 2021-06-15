@@ -1,5 +1,8 @@
 import numpy as np
 from dynamic_constants import coefficient_dict
+CHORD_LENGTH = 3.45
+WING_AREA = 27.87
+WING_SPAN = 9.144
 
 
 def cx(alpha, deltaE):
@@ -129,3 +132,23 @@ def derivatives(alpha, beta, deltaE, deltaA, deltaR):
         cnDeltaA(alpha, beta),
         cnDeltaR(alpha, beta)
     )
+
+
+def get_aero_forces(density, velocity, alpha, beta, p, q, r, deltaE, deltaA, deltaR):
+
+    coefficients = derivatives(alpha, beta, deltaE, deltaA, deltaR)
+    dynamic_pressure = (1 / 2) * density * velocity**2
+
+    #X force.
+    CX_total = coefficients[0] + (q*CHORD_LENGTH) * coefficients[1] / (2 * velocity)
+    X_force = CX_total * dynamic_pressure * WING_AREA
+
+    #Y force.
+    CY_total = coefficients[2] + WING_SPAN / (2*velocity) * (coefficients[3]*p + coefficients[4]*r)
+    Y_force = CY_total * dynamic_pressure * WING_AREA
+
+    #Z force.
+    CZ_total = coefficients[5] + q*coefficients[6]*CHORD_LENGTH / (2*velocity)
+    Z_force = CZ_total * dynamic_pressure * WING_AREA
+
+    return (X_force, Y_force, Z_force)
