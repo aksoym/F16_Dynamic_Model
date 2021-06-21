@@ -11,9 +11,13 @@ state = {"Vt":0, "beta":0, "alpha":0, "p":0, "q":0, "r":0, "x":0, "y":0, "z":0, 
     "theta":0, "psi":0}
 
 
-def update_motion(plane_matrix, plane_speed_vector, dynamic_state):
+def update_motion(plane_matrix, plane_speed_vector,
+                  state, deltaE, deltaA, deltaR, thrust_lever):
 
-    global mass, density
+    global mass
+
+    #Get atmospheric properties. state 'z' is referenced as the altitude.
+    density, speed_of_sound = atmosphere(state['z'])
 
     #Update the states based on info from the aircraft.
     state['Vt'] = np.linalg.norm(plane_speed_vector)
@@ -26,6 +30,7 @@ def update_motion(plane_matrix, plane_speed_vector, dynamic_state):
     Fgravity = gravity(state['phi'], state['theta'], mass)
     Faero = get_aero_forces(density, state['Vt'], state['alpha'], state['beta'],
                             state['p'], state['q'], state['r'], deltaE, deltaA, deltaR)
+    Fprop = get_thrust(thrust_lever, mach, altitude)
 
     #Wind frame velocity to body frame.
     u = state['Vt'] * cos(state['alpha']) * cos(state['beta'])

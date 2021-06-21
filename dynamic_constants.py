@@ -1,9 +1,9 @@
 import numpy as np
 
 #Gyroscopic and propulsion moment constants.
-ANGULAR_MOMENTUM = np.array([216.9],
+ANGULAR_MOMENTUM = np.array([[216.9],
                             [0],
-                            [0])
+                            [0]])
 
 THETA_ENG = 0 #in radians.
 PSI_ENG = 0 #in radians.
@@ -42,6 +42,6 @@ Izz = 0
 Ixz = 1331
 Iyz = 0
 
-INERTIAL_MOMENTS = np.array([Ixx, -Ixy, -Ixz],
+INERTIAL_MOMENTS = np.array([[Ixx, -Ixy, -Ixz],
                             [-Ixy, Iyy, -Iyz],
-                            [-Ixz, -Iyz, Izz])
+                            [-Ixz, -Iyz, Izz]])
