@@ -1,10 +1,10 @@
 import numpy as np
 from gravity_model import gravity
 from aero_model import get_aero_forces, get_aero_moments
-from dynamic_constants import INERTIAL_MOMENTS
+from dynamic_tools import INERTIAL_MOMENTS
 from propulsion_model import propulsion
 from gyro_model import gyroscopic
-from custom_trigon import cos, sin, tan, arctan, sec, cosec, arcsin, arccos
+from math_tools import cos, sin, get_theta_and_phi_from_rotation_matrix
 
 mass = 9298.6
 
@@ -25,7 +25,9 @@ def update_motion(plane_matrix, plane_speed_vector,
     #Update the states based on info from the aircraft.
     state['Vt'] = np.linalg.norm(plane_speed_vector)
 
+    kinematic_rotation_matrix = plane_matrix[:9].reshape(3, 3)
 
+    state['theta'], state['beta'] = get_theta_and_phi_from_rotation_matrix(kinematic_rotation_matrix)
 
     state['x'] = plane_matrix[9]
     state['y'] = plane_matrix[10]
@@ -73,7 +75,7 @@ def update_motion(plane_matrix, plane_speed_vector,
 
     #Translational dynamics in the wind frame.
 
-    translational_dynamics = invewb * np.array([[udot], [vdot], [wdot]])
+    translational_dynamics = np.matmul(invewb, np.array([udot, vdot, wdot]))
     Vtdot = translational_dynamics[0]
     betadot = translational_dynamics[1]
     alphadot = translational_dynamics[2]
@@ -83,7 +85,7 @@ def update_motion(plane_matrix, plane_speed_vector,
         [Maero[0] + Mprop[0] + Mgyro[0]],
         [Maero[1] + Mprop[1] + Mgyro[1]],
         [Maero[2] + Mprop[2] + Mgyro[2]]
-    ])
+    ]).reshape(3, 1)
 
     pqr = np.array([
         [0, -state['r'], state['q']],
@@ -141,15 +143,42 @@ def update_motion(plane_matrix, plane_speed_vector,
 
     #Rotational kinematics.
 
-    inv_rot_longitudinal_kinematics = np.array([
-        [1, tan]
+    # kinematic_rotation_matrix = np.array([
+    #     [1, tan(state['theta'])*sin(state['phi']), cos(state['phi'])*tan(state['theta'])],
+    #     [0, cos(state['phi']), -sin(state['phi'])],
+    #     [0, sec(state['theta'])*sin(state['phi']), sec(state['theta'])*cos(state['phi'])]
+    # ])
+
+
+    rotational_kinematics = np.matmul(kinematic_rotation_matrix, np.array([[state['p']],
+                                                                           [state['q']],
+                                                                           [state['r']]]))
+    phidot = rotational_kinematics[0]
+    thetadot = rotational_kinematics[1]
+    psidot = rotational_kinematics[2]
+
+
+    dotstate_variables = [Vtdot, betadot, alphadot, pdot, qdot, rdot, xdot, ydot, zdot, phidot, thetadot, psidot]
+    state_diff = np.array([variable.item() for variable in dotstate_variables])
+
+    updated_state = dict()
+
+    for variable_index, key in enumerate(state.keys()):
+        updated_state[key] = state[key] + state_diff[variable_index]
+
+    resulting_plane_matrix = np.array([
+        1, tan(state['theta'])*sin(state['phi']), cos(state['phi'])*tan(state['theta']),
+        0, cos(state['phi']), -sin(state['phi']),
+        0, sec(state['theta'])*sin(state['phi']), sec(state['theta'])*cos(state['phi']),
+        state['x'], state['y'], state['z']
+    ])
+
+    resulting_plane_speed_vector = np.array([
+        u, v, w
     ])
 
 
-    x = np.array([Vtdot, betadot, alphadot, pdot, qdot, rdot, xdot, ydot, zdot,
-                     phidot, thetadot, psidot])
-
-    return x
+    return resulting_plane_matrix, resulting_plane_speed_vector, updated_state, state_diff
 
 
 

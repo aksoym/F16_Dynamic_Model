@@ -1,6 +1,6 @@
 import numpy as np
-from dynamic_constants import coefficient_dict
-from custom_trigon import cos, sin, tan, arctan, sec, cosec, arcsin, arccos
+from dynamic_tools import coefficient_dict
+from math_tools import cos, sin, tan, arctan, sec, cosec, arcsin, arccos
 
 CHORD_LENGTH = 3.45
 WING_AREA = 27.87
