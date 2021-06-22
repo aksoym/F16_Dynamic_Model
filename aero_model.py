@@ -1,5 +1,7 @@
 import numpy as np
 from dynamic_constants import coefficient_dict
+from custom_trigon import cos, sin, tan, arctan, sec, cosec, arcsin, arccos
+
 CHORD_LENGTH = 3.45
 WING_AREA = 27.87
 WING_SPAN = 9.144
@@ -152,3 +154,19 @@ def get_aero_forces(density, velocity, alpha, beta, p, q, r, deltaE, deltaA, del
     Z_force = CZ_total * dynamic_pressure * WING_AREA
 
     return (X_force, Y_force, Z_force)
+
+def get_aero_moments(density, velocity, alpha, beta, p, q, r, deltaE, deltaA, deltaR):
+
+    coefficients = derivatives(alpha, beta, deltaE, deltaA, deltaR)
+    dynamic_pressure = (1/2) * density * velocity**2
+
+    Cm_total = coefficients[12] + (coefficients[13] * CHORD_LENGTH * q) / 2*velocity
+    M_moment = Cm_total * dynamic_pressure * WING_AREA * CHORD_LENGTH
+
+    Cl_total = coefficients[7] + (coefficients[8]*p + coefficients[9]*r) * WING_SPAN / 2*velocity
+    L_moment = Cl_total * dynamic_pressure * WING_AREA * WING_SPAN
+
+    Cn_total = coefficients[14] + (coefficients[15]*p + coefficients[16]*r) * WING_SPAN / 2*velocity
+    N_moment = Cn_total * dynamic_pressure * WING_AREA * WING_SPAN
+
+    return (L_moment, M_moment, N_moment)

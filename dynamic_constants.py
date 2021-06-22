@@ -1,13 +1,19 @@
 import numpy as np
+from custom_trigon import cos, sin, tan, arctan, sec, cosec, arcsin, arccos
 
 #Gyroscopic and propulsion moment constants.
 ANGULAR_MOMENTUM = np.array([[216.9],
                             [0],
                             [0]])
 
-THETA_ENG = 0 #in radians.
-PSI_ENG = 0 #in radians.
-ENGINE_ORIENTATION = (THETA_ENG, PSI_ENG)
+theta_eng = 0 #in radians.
+psi_eng = 0 #in radians.
+ENGINE_ORIENTATION = (theta_eng, psi_eng)
+ENGINE_OFFSET = np.array([
+    [0],
+    [0],
+    [0]
+])
 
 #Stability derivatives polynomial coefficeints.
 coefficient_dict = {}
@@ -35,10 +41,10 @@ coefficient_dict['s'] = (-8.115894e-02, -1.156580e-02, 2.514167e-02, 2.038748e-0
 #equations of motion
 
 
-Ixx = 0
+Ixx = 12875
 Ixy = 0
-Iyy = 0
-Izz = 0
+Iyy = 75674
+Izz = 85552
 Ixz = 1331
 Iyz = 0
 

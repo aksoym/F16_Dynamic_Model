@@ -1,5 +1,6 @@
 import numpy as np
 from dynamic_constants import ANGULAR_MOMENTUM, ENGINE_ORIENTATION
+from custom_trigon import cos, sin, tan, arctan, sec, cosec, arcsin, arccos
 
 
 def gyroscopic(p, q, r):
@@ -12,19 +13,19 @@ def gyroscopic(p, q, r):
     :return: gyroscopic moment, a scalar.
     """
 
-    angular_speed_mat = np.array([p],
-                                 [q],
-                                 [r])
+    angular_speed_mat = np.array([[p],
+                                  [q],
+                                  [r]])
 
     y_rot_mat = np.array([
-        [np.cos(ENGINE_ORIENTATION(0)), 0, -np.sin(ENGINE_ORIENTATION(0))],
+        [cos(ENGINE_ORIENTATION[0]), 0, -sin(ENGINE_ORIENTATION[0])],
         [0, 1, 0],
-        [np.sin(ENGINE_ORIENTATION(0)), 0, np.cos(ENGINE_ORIENTATION(0))]
+        [sin(ENGINE_ORIENTATION[0]), 0, cos(ENGINE_ORIENTATION[0])]
     ])
 
     z_rot_mat = np.array([
-        [np.cos(ENGINE_ORIENTATION(1)), np.sin(ENGINE_ORIENTATION(1)), 0],
-        [-np.sin(ENGINE_ORIENTATION(1)), np.cos(ENGINE_ORIENTATION(1)), 0],
+        [cos(ENGINE_ORIENTATION[1]), sin(ENGINE_ORIENTATION[1]), 0],
+        [sin(ENGINE_ORIENTATION[1]), cos(ENGINE_ORIENTATION[1]), 0],
         [0, 0, 1]
     ])
 
@@ -33,7 +34,8 @@ def gyroscopic(p, q, r):
 
     acting_angular_momentum = np.matmul(prop_to_body_tm, ANGULAR_MOMENTUM)
 
-    resulting_gyroscopic_moment = -np.cross(angular_speed_mat, acting_angular_momentum)
+
+    resulting_gyroscopic_moment = -np.cross(angular_speed_mat, acting_angular_momentum, axisa=0, axisb=0).reshape(-1, 1)
 
     return resulting_gyroscopic_moment
 

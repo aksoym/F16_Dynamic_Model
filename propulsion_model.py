@@ -3,15 +3,15 @@ import scipy.io as io
 from scipy.interpolate import interp2d
 import matplotlib.pyplot as plt
 from dynamic_constants import ANGULAR_MOMENTUM, ENGINE_ORIENTATION
-from numpy import cos, sin
+from dynamic_constants import ENGINE_OFFSET
+from custom_trigon import cos, sin, tan, arctan, sec, cosec, arcsin, arccos
 
 
 #Read .mat data.
 engine_data = io.loadmat('f16_EngineData.mat')
 
-
 data = engine_data['f16_EngineData']
-print(data[0][0][0][0][0][0][0][0][1])
+#print(data[0][0][0][0][0][0][0][0][1])
 
 mach_discrete = [0.0, 0.2, 0.4, 0.6, 0.8, 1.0]
 altitude_discrete = [0, 10000, 20000, 30000, 40000, 50000]
@@ -59,8 +59,23 @@ def propulsion(thrust_input, mach, altitude):
         [sin(ENGINE_ORIENTATION[0]), 0, cos(ENGINE_ORIENTATION[0])]
     ])
 
-    rotx = np.array([
-
+    rotz = np.array([
+        [cos(ENGINE_ORIENTATION[1]), sin(ENGINE_ORIENTATION[1]), 0],
+        [-sin(ENGINE_ORIENTATION[1]), cos(ENGINE_ORIENTATION[1]), 0],
+        [0, 0, 1]
     ])
 
-    return np.array([Fp, Mp])
+    body_to_propulsion = np.matmul(roty, rotz)
+    propulsion_to_body = np.linalg.inv(body_to_propulsion)
+
+    propulsion_force = np.matmul(propulsion_to_body,
+                                 np.array([
+                                     [thrust],
+                                     [0],
+                                     [0]
+                                 ]))
+
+    propulsion_moment = np.cross(ENGINE_OFFSET, propulsion_force, axisa=0, axisb=0).reshape(-1, 1)
+
+
+    return (propulsion_force, propulsion_moment)
