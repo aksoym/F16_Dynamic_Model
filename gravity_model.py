@@ -1,5 +1,5 @@
 import numpy as np
-from custom_trigon import cos, sin, tan, arctan, sec, cosec, arcsin, arccos
+from math_tools import cos, sin, tan, arctan, sec, cosec, arcsin, arccos
 
 GRAVITY = 9.81
 

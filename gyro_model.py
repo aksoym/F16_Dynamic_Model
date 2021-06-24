@@ -1,6 +1,6 @@
 import numpy as np
-from dynamic_constants import ANGULAR_MOMENTUM, ENGINE_ORIENTATION
-from custom_trigon import cos, sin, tan, arctan, sec, cosec, arcsin, arccos
+from dynamic_tools import ANGULAR_MOMENTUM, ENGINE_ORIENTATION
+from math_tools import cos, sin, tan, arctan, sec, cosec, arcsin, arccos
 
 
 def gyroscopic(p, q, r):

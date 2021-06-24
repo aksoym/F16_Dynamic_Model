@@ -2,9 +2,9 @@ import numpy as np
 import scipy.io as io
 from scipy.interpolate import interp2d
 import matplotlib.pyplot as plt
-from dynamic_constants import ANGULAR_MOMENTUM, ENGINE_ORIENTATION
-from dynamic_constants import ENGINE_OFFSET
-from custom_trigon import cos, sin, tan, arctan, sec, cosec, arcsin, arccos
+from dynamic_tools import ANGULAR_MOMENTUM, ENGINE_ORIENTATION
+from dynamic_tools import ENGINE_OFFSET
+from math_tools import cos, sin, tan, arctan, sec, cosec, arcsin, arccos
 
 
 #Read .mat data.
@@ -65,12 +65,13 @@ def propulsion(thrust_input, mach, altitude):
         [0, 0, 1]
     ])
 
+
     body_to_propulsion = np.matmul(roty, rotz)
     propulsion_to_body = np.linalg.inv(body_to_propulsion)
 
     propulsion_force = np.matmul(propulsion_to_body,
                                  np.array([
-                                     [thrust],
+                                     [thrust.item()],
                                      [0],
                                      [0]
                                  ]))
