@@ -8,7 +8,7 @@ from math_tools import cos, sin, tan, arctan, sec, cosec, arcsin, arccos
 
 
 #Read .mat data.
-engine_data = io.loadmat('f16_EngineData.mat')
+engine_data = io.loadmat('data/f16_EngineData.mat')
 
 data = engine_data['f16_EngineData']
 #print(data[0][0][0][0][0][0][0][0][1])
