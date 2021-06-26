@@ -113,27 +113,29 @@ def derivatives(alpha, beta, deltaE, deltaA, deltaR):
     deltaA = deltaA * np.pi / 180
     deltaR = deltaR * np.pi / 180
 
-    return (
-        cx(alpha, beta),
-        cxQ(alpha),
-        cy(beta, deltaA, deltaR),
-        cyP(alpha),
-        cyR(alpha),
-        cz(alpha, beta, deltaE),
-        czQ(alpha),
-        cl(alpha, beta),
-        clP(alpha),
-        clR(alpha),
-        clDeltaA(alpha, beta),
-        clDeltaR(alpha, beta),
-        cm(alpha, deltaE),
-        cmQ(alpha),
-        cn(alpha, beta),
-        cnP(alpha),
-        cnR(alpha),
-        cnDeltaA(alpha, beta),
-        cnDeltaR(alpha, beta)
+    derivative_dict =dict(
+        'cx': cx(alpha, deltaE)
+        'cxQ': cxQ(alpha),
+        'cy': cy(beta, deltaA, deltaR),
+        'cyP': cyP(alpha),
+        'cyR': cyR(alpha),
+        'cz': cz(alpha, beta, deltaE),
+        'czQ': czQ(alpha),
+        'cl': cl(alpha, beta),
+        'clP': clP(alpha),
+        'clR': clR(alpha),
+        'clDeltaA': clDeltaA(alpha, beta),
+        'clDeltaR': clDeltaR(alpha, beta),
+        'cm': cm(alpha, deltaE),
+        'cmQ': cmQ(alpha),
+        'cn': cn(alpha, beta),
+        'cnP': cnP(alpha),
+        'cnR': cnR(alpha),
+        'cnDeltaA': cnDeltaA(alpha, beta),
+        'cnDeltaR': cnDeltaR(alpha, beta)
     )
+
+    return derivative_dict
 
 
 def get_aero_forces(density, velocity, alpha, beta, p, q, r, deltaE, deltaA, deltaR):
@@ -142,15 +144,15 @@ def get_aero_forces(density, velocity, alpha, beta, p, q, r, deltaE, deltaA, del
     dynamic_pressure = (1 / 2) * density * velocity**2
 
     #X force.
-    CX_total = coefficients[0] + (q*CHORD_LENGTH) * coefficients[1] / (2 * velocity)
+    CX_total = coefficients['cx'] + (q*CHORD_LENGTH) * coefficients['cxQ'] / (2 * velocity)
     X_force = CX_total * dynamic_pressure * WING_AREA
 
     #Y force.
-    CY_total = coefficients[2] + WING_SPAN / (2*velocity) * (coefficients[3]*p + coefficients[4]*r)
+    CY_total = coefficients['cy'] + WING_SPAN / (2*velocity) * (coefficients['cyP']*p + coefficients['cyR']*r)
     Y_force = CY_total * dynamic_pressure * WING_AREA
 
     #Z force.
-    CZ_total = coefficients[5] + q*coefficients[6]*CHORD_LENGTH / (2*velocity)
+    CZ_total = coefficients['cz'] + q*coefficients['czQ']*CHORD_LENGTH / (2*velocity)
     Z_force = CZ_total * dynamic_pressure * WING_AREA
 
     return (X_force, Y_force, Z_force)
@@ -160,13 +162,13 @@ def get_aero_moments(density, velocity, alpha, beta, p, q, r, deltaE, deltaA, de
     coefficients = derivatives(alpha, beta, deltaE, deltaA, deltaR)
     dynamic_pressure = (1/2) * density * velocity**2
 
-    Cm_total = coefficients[12] + (coefficients[13] * CHORD_LENGTH * q) / 2*velocity
+    Cm_total = coefficients['cm'] + (coefficients['cmQ'] * CHORD_LENGTH * q) / 2*velocity
     M_moment = Cm_total * dynamic_pressure * WING_AREA * CHORD_LENGTH
 
-    Cl_total = coefficients[7] + (coefficients[8]*p + coefficients[9]*r) * WING_SPAN / 2*velocity
+    Cl_total = coefficients['cl'] + (coefficients['clP']*p + coefficients['clR']*r) * WING_SPAN / 2*velocity
     L_moment = Cl_total * dynamic_pressure * WING_AREA * WING_SPAN
 
-    Cn_total = coefficients[14] + (coefficients[15]*p + coefficients[16]*r) * WING_SPAN / 2*velocity
+    Cn_total = coefficients['cn'] + (coefficients['cnP']*p + coefficients['cnR']*r) * WING_SPAN / 2*velocity
     N_moment = Cn_total * dynamic_pressure * WING_AREA * WING_SPAN
 
     return (L_moment, M_moment, N_moment)
