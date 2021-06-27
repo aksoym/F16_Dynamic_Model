@@ -83,7 +83,11 @@ def cnDeltaR(alpha, beta):
     s0, s1, s2, s3, s4, s5 = coefficient_dict['s']
     return s0 + s1*alpha + s2*beta + s3*alpha*beta + s4*(alpha**2)*beta + s5*(alpha**2)
 
+def CL(cx, cz, alpha):
+    return cz*cos(alpha) - cx*sin(alpha)
 
+def CD(cx, cz, alpha):
+    return cz*sin(alpha) + cx*cos(alpha)
 
 def derivatives(alpha, beta, deltaE, deltaA, deltaR):
     """
@@ -113,8 +117,8 @@ def derivatives(alpha, beta, deltaE, deltaA, deltaR):
     deltaA = deltaA * np.pi / 180
     deltaR = deltaR * np.pi / 180
 
-    derivative_dict =dict(
-        'cx': cx(alpha, deltaE)
+    derivative_dict = {
+        'cx': cx(alpha, deltaE),
         'cxQ': cxQ(alpha),
         'cy': cy(beta, deltaA, deltaR),
         'cyP': cyP(alpha),
@@ -132,8 +136,10 @@ def derivatives(alpha, beta, deltaE, deltaA, deltaR):
         'cnP': cnP(alpha),
         'cnR': cnR(alpha),
         'cnDeltaA': cnDeltaA(alpha, beta),
-        'cnDeltaR': cnDeltaR(alpha, beta)
-    )
+        'cnDeltaR': cnDeltaR(alpha, beta),
+        'CL': CL(cx(alpha, deltaE), cz(alpha, beta, deltaE), alpha),
+        'CD': CD(cx(alpha, deltaE), cz(alpha, beta, deltaE), alpha)}
+
 
     return derivative_dict
 
