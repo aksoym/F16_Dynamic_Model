@@ -1,6 +1,7 @@
 import pickle
 from  scipy.interpolate import interpn
 import numpy as np
+from math_tools import sin, cos
 
 CHORD_LENGTH = 3.45
 WING_AREA = 27.87
@@ -68,7 +69,10 @@ def get_aero_force_coefficients(velocity, alpha, beta, p, q, r, deltaE, deltaA, 
                    + (WING_SPAN / 2*velocity) * ((coefs[5] + coefs[6] * (1 - deltaLEF/25)) * r
                                                  + (coefs[7] + coefs[8] * (1 - deltaLEF/25))*p)
 
-    return (calculate_CX, calculate_CY, calculate_CZ)
+    lift_coef = -calculate_CZ * cos(alpha) + calculate_CX * sin(alpha)
+    drag_coef = -calculate_CZ * sin(alpha) - calculate_CX * cos(alpha)
+
+    return (calculate_CX, calculate_CY, calculate_CZ, lift_coef, drag_coef)
 
 
 def get_aero_forces(density, velocity, alpha, beta, p, q, r, deltaE, deltaA, deltaR, deltaLEF, deltaSB):
