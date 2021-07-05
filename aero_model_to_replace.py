@@ -2,6 +2,10 @@ import pickle
 from  scipy.interpolate import interpn
 import numpy as np
 
+CHORD_LENGTH = 3.45
+WING_AREA = 27.87
+WING_SPAN = 9.144
+
 with open('data/ParsedAeroDataBPs.pkl', 'rb') as f:
     breakpoints = pickle.load(f)
 
@@ -17,9 +21,6 @@ def flat_out(array):
         return array
 
 
-val = interpn(tuple(breakpoints['CZ']['CZ'].values()), values['CZ']['CZ'], (10, 0, 0))
-print(val)
-
 def coefficient(label, point):
     global breakpoints, values, parameter_names
     bp_data = breakpoints[label]
@@ -34,18 +35,47 @@ def coefficient(label, point):
                 if key_name == name:
                     idx_for_needed_params.append(i)
 
-        print(bp.values(), flat_out(value), idx_for_needed_params, sep='\n')
         coef_list.append(interpn(tuple(bp.values()), flat_out(value), np.array([point[i] for i in idx_for_needed_params])))
 
     coef_list = [scalar_array.item() for scalar_array in coef_list]
     return tuple(coef_list)
 
 
-print(coefficient('Cm', (4, 0, -5)))
+def get_aero_force_coefficients(velocity, alpha, beta, p, q, r, deltaE, deltaA, deltaR, deltaLEF, deltaSB):
+    global WING_SPAN, WING_AREA, CHORD_LENGTH
 
-
-def get_aero_forces(density, velocity, alpha, beta, p, q, r, deltaE, deltaA, deltaR):
     interp_coord = (alpha, beta, deltaE)
 
     coefs = coefficient('CX', interp_coord)
-    calculate_CX = coefs[0] +
+    deltaCoefs = coefficient('CX', (alpha, beta, 0))
+    calculate_CX = coefs[0] \
+                   + (coefs[1] - deltaCoefs[0]) * (1 - deltaLEF/25) \
+                   + coefs[4] * (deltaSB/60) \
+                   + ((CHORD_LENGTH * q) / 2*velocity) * (coefs[2] + coefs[3]*(1 - deltaLEF/25))
+
+    coefs = coefficient('CZ', interp_coord)
+    deltaCoefs = coefficient('CZ', (alpha, beta, 0))
+    calculate_CZ = coefs[0] \
+                   + (coefs[1] - deltaCoefs[0]) * (1 - deltaLEF/25) \
+                   + coefs[4] * (deltaSB/60) \
+                   + ((CHORD_LENGTH*q) / 2*velocity) * (coefs[2] + coefs[3] * (1 - deltaLEF/25))
+
+    coefs = coefficient('CY', interp_coord)
+    calculate_CY = coefs[0] \
+                   + (coefs[1] - coefs[0]) * (1 - deltaLEF/25) \
+                   + ((coefs[2] - coefs[0]) + (coefs[3] - coefs[1] - coefs[2] + coefs[0]) * (1 - deltaLEF/25)) * (deltaA/20) \
+                   + (coefs[4] - coefs[0]) * (deltaR/30) \
+                   + (WING_SPAN / 2*velocity) * ((coefs[5] + coefs[6] * (1 - deltaLEF/25)) * r
+                                                 + (coefs[7] + coefs[8] * (1 - deltaLEF/25))*p)
+
+    return (calculate_CX, calculate_CY, calculate_CZ)
+
+
+def get_aero_forces(density, velocity, alpha, beta, p, q, r, deltaE, deltaA, deltaR, deltaLEF, deltaSB):
+    global WING_AREA
+    coefs = get_aero_force_coefficients(velocity, alpha, beta, p, q, r, deltaE, deltaA, deltaR, deltaLEF, deltaSB)
+    coefs = np.array(coefs)
+
+    force_term = (density * (velocity**2) / 2) * WING_AREA
+
+    return tuple(coefs * force_term)

@@ -1,11 +1,8 @@
 from update_motion import update_motion
 import time
 import numpy as np
-
-
-
-
-
+from aero_model_to_replace import coefficient
+import pickle
 
 
 def update_motion_unit_test(function):
@@ -39,5 +36,13 @@ def update_motion_unit_test(function):
     print(result)
     print(f'Time elapsed in function runtime {end - begin} s')
 
+def aero_coefficient_unit_test(function, label):
+    point = (0, 0, 0)
+    print(function(label, point))
+    return None
 
-update_motion_unit_test(update_motion)
+with open('data/ParsedAeroDataBPs.pkl', 'rb') as f:
+    breakpoints = pickle.load(f)
+
+
+print(breakpoints['CY'].keys())
