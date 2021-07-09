@@ -1,7 +1,7 @@
 from update_motion import update_motion
 import time
 import numpy as np
-from aero_model_to_replace import get_aero_forces, get_aero_force_coefficients, get_aero_moment_coefficients, _coefficient
+from aero_model import get_aero_forces, get_aero_force_coefficients, get_aero_moment_coefficients, _coefficient
 import pickle
 import matplotlib.pyplot as plt
 import matplotlib as mpl
