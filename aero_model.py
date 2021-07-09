@@ -1,180 +1,138 @@
+import pickle
+from  scipy.interpolate import interpn
 import numpy as np
-from dynamic_tools import coefficient_dict
-from math_tools import cos, sin, tan, arctan, sec, cosec, arcsin, arccos
+from math_tools import sin, cos
 
 CHORD_LENGTH = 3.45
 WING_AREA = 27.87
 WING_SPAN = 9.144
 
+with open('data/ParsedAeroDataBPs.pkl', 'rb') as f:
+    breakpoints = pickle.load(f)
 
-def cx(alpha, deltaE):
-    a0, a1, a2, a3, a4, a5, a6 = coefficient_dict['a']
-    return a0 + a1*alpha + a2*(deltaE**2) + a3*deltaE + a4*alpha*deltaE + a5*(alpha**2) + a6*(alpha**3)
+with open('data/ParsedAeroDataValues.pkl', 'rb') as f:
+    values = pickle.load(f)
 
-def cxQ(alpha):
-    b0, b1, b2, b3, b4 = coefficient_dict['b']
-    return b0 + b1*alpha + b2*(alpha**2) + b3*(alpha**3) + b4*(alpha**4)
+parameter_names = ('alpha', 'beta', 'dHT')
 
-def cy(beta, deltaA, deltaR):
-    c0, c1, c2 = coefficient_dict['c']
-    return c0*beta + c1*deltaA + c2*deltaR
-
-def cyP(alpha):
-    d0, d1, d2, d3 = coefficient_dict['d']
-    return d0 + d1*alpha + d2*(alpha**2) + d3*(alpha**3)
-
-def cyR(alpha):
-    e0, e1, e2, e3 = coefficient_dict['e']
-    return e0 + e1*alpha + e2*(alpha**2) + e3*(alpha**3)
-
-def cz(alpha, beta, deltaE):
-    f0, f1, f2, f3, f4, f5 = coefficient_dict['f']
-    return (1 - beta**2)*(f0 + f1*alpha + f2*(alpha**2) + f3*(alpha**3) + f4*(alpha**4)) + f5*deltaE
-
-def czQ(alpha):
-    g0, g1, g2, g3, g4 = coefficient_dict['g']
-    return g0 + g1*alpha + g2*(alpha**2) + g3*(alpha**3) + g4*(alpha**4)
-
-def cl(alpha, beta):
-    h0, h1, h2, h3, h4, h5, h6, h7 = coefficient_dict['h']
-    return h0*beta + h1*beta*alpha + h2*beta*(alpha**2) + h3*(beta**2) + h4*(beta**2)*alpha + h5*beta*(alpha**3) + h6*beta*(alpha**4) + h7*(beta**2)*(alpha**2)
-
-def clP(alpha):
-    i0, i1, i2, i3 = coefficient_dict['i']
-    return i0 + i1*alpha + i2*(alpha**2) + i3*(alpha**3)
-
-def clR(alpha):
-    j0, j1, j2, j3, j4 = coefficient_dict['j']
-    return j0 + j1*alpha + j2*(alpha**2) + j3*(alpha**3) + j4*(alpha**4)
-
-def clDeltaA(alpha, beta):
-    k0, k1, k2, k3, k4, k5, k6 = coefficient_dict['k']
-    return k0 + k1*alpha + k2*beta + k3*(alpha**2) + k4*alpha*beta + k5*(alpha**2)*beta + k6*(alpha**3)
-
-def clDeltaR(alpha, beta):
-    l0, l1, l2, l3, l4, l5, l6 = coefficient_dict['l']
-    return l0 + l1*alpha + l2*beta + l3*alpha*beta + l4*(alpha**2)*beta + l5*(alpha**3)*beta + l6*(beta**2)
-
-def cm(alpha, deltaE):
-    m0, m1, m2, m3, m4, m5, m6, m7 = coefficient_dict['m']
-    return m0 + m1*alpha + m2*deltaE + m3*alpha*deltaE + m4*(deltaE**2) + m5*(alpha**2)*(deltaE) + m6*(deltaE**3) + m7*alpha*(deltaE**2)
-
-def cmQ(alpha):
-    n0, n1, n2, n3, n4, n5 = coefficient_dict['n']
-    return n0 + n1*alpha + n2*(alpha**2) + n3*(alpha**3) + n4*(alpha**4) + n5*(alpha**5)
-
-def cn(alpha, beta):
-    o0, o1, o2, o3, o4, o5, o6 = coefficient_dict['o']
-    return o0*beta + o1*alpha*beta + o2*(beta**2) + o3*(alpha)*(beta**2) + o4*(alpha**2)*beta + o5*(alpha**2)*(beta**2) + o6*(alpha**3)*beta
-
-def cnP(alpha):
-    p0, p1, p2, p3, p4 = coefficient_dict['p']
-    return p0 + p1*alpha + p2*(alpha**2) + p3*(alpha**3) + p4*(alpha**4)
-
-def cnR(alpha):
-    q0, q1, q2 = coefficient_dict['q']
-    return q0 + q1*alpha + q2*(alpha**2)
-
-def cnDeltaA(alpha, beta):
-    r0, r1, r2, r3, r4, r5, r6, r7, r8, r9 = coefficient_dict['r']
-    return r0 + r1*alpha + r2*beta + r3*alpha*beta + r4*(alpha**2)*beta + r5*(alpha**3)*beta + r6*(alpha**2) + r7*(alpha**3) + r8*(beta**3) + r9*alpha*(beta**3)
-
-def cnDeltaR(alpha, beta):
-    s0, s1, s2, s3, s4, s5 = coefficient_dict['s']
-    return s0 + s1*alpha + s2*beta + s3*alpha*beta + s4*(alpha**2)*beta + s5*(alpha**2)
-
-def CL(cx, cz, alpha):
-    return cz*cos(alpha) - cx*sin(alpha)
-
-def CD(cx, cz, alpha):
-    return cz*sin(alpha) + cx*cos(alpha)
-
-def derivatives(alpha, beta, deltaE, deltaA, deltaR):
-    """
-    Returns the stability derivatives as a tuple. The order is as follows (you can copy this sequence for unpacking):
-    (cx, cxQ, cy, cyP, cyR, cz, czQ, cl, clP, clR, clDeltaA, clDeltaR, cm, cmQ, cn, cnP, cnR, cnDeltaA, cnDeltaR).
+def flat_out(array):
+    if array.shape[0] == 1 and array.shape[1]:
+        return array.flatten()
+    else:
+        return array
 
 
-    :param alpha: ranges in [-10, 45] degrees.
-    :param beta: ranges in [-30, 30] degrees.
-    :param deltaE: ranges in [-25, 25] degrees.
-    :param deltaA: ranges in [-21.5, 21.5] degrees.
-    :param deltaR: ranges in [-30, 30] degrees.
-    :return: tuple of stability derivatives.
-    """
+def _coefficient(label, point):
+    global breakpoints, values, parameter_names
+    bp_data = breakpoints[label]
+    value_data = values[label]
 
-    #Checking for boundaries.
-    assert -10 <= alpha <= 45, f"alpha must range between [-10, 45] degrees, current value is {alpha}"
-    assert -30 <= beta <= 30, f"beta must range between [-30, 30] degrees, current value is {beta}"
-    assert -25 <= deltaE <= 25, f"deltaE must range between [-25, 25] degrees, current value is {deltaE}"
-    assert -21.5 <= deltaA <= 21.5, f"deltaA must range between [-21.5, 21.5] degrees, current value is {deltaA}"
-    assert -30 <= deltaR <= 30, f"deltaR must range between [-30, 30] degrees, current value is {deltaR}"
+    coef_list = []
+    for bp, value in zip(bp_data.values(), value_data.values()):
 
-    #Degrees to radians conversions.
-    alpha = alpha * np.pi / 180
-    beta = beta * np.pi / 180
-    deltaE = deltaE * np.pi / 180
-    deltaA = deltaA * np.pi / 180
-    deltaR = deltaR * np.pi / 180
+        idx_for_needed_params = []
+        for key_name in bp.keys():
+            for i, name in enumerate(parameter_names):
+                if key_name == name:
+                    idx_for_needed_params.append(i)
 
-    derivative_dict = {
-        'cx': cx(alpha, deltaE),
-        'cxQ': cxQ(alpha),
-        'cy': cy(beta, deltaA, deltaR),
-        'cyP': cyP(alpha),
-        'cyR': cyR(alpha),
-        'cz': cz(alpha, beta, deltaE),
-        'czQ': czQ(alpha),
-        'cl': cl(alpha, beta),
-        'clP': clP(alpha),
-        'clR': clR(alpha),
-        'clDeltaA': clDeltaA(alpha, beta),
-        'clDeltaR': clDeltaR(alpha, beta),
-        'cm': cm(alpha, deltaE),
-        'cmQ': cmQ(alpha),
-        'cn': cn(alpha, beta),
-        'cnP': cnP(alpha),
-        'cnR': cnR(alpha),
-        'cnDeltaA': cnDeltaA(alpha, beta),
-        'cnDeltaR': cnDeltaR(alpha, beta),
-        'CL': CL(cx(alpha, deltaE), cz(alpha, beta, deltaE), alpha),
-        'CD': CD(cx(alpha, deltaE), cz(alpha, beta, deltaE), alpha)}
+        coef_list.append(interpn(tuple(bp.values()), flat_out(value), np.array([point[i] for i in idx_for_needed_params]), bounds_error=False, fill_value=None))
+
+    coef_list = [scalar_array.item() for scalar_array in coef_list]
+    return tuple(coef_list)
 
 
-    return derivative_dict
+def get_aero_force_coefficients(velocity, alpha, beta, p, q, r, deltaE, deltaA, deltaR, deltaLEF, deltaSB):
+    global WING_SPAN, WING_AREA, CHORD_LENGTH
+
+    interp_coord = (alpha, beta, deltaE)
+
+    coefs = _coefficient('CX', interp_coord)
+    deltaCoefs = _coefficient('CX', (alpha, beta, 0))
+    calculate_CX = coefs[0] \
+                   + (coefs[1] - deltaCoefs[0]) * (1 - deltaLEF/25) \
+                   + coefs[4] * (deltaSB/60) \
+                   + ((CHORD_LENGTH * q) / 2*velocity) * (coefs[2] + coefs[3]*(1 - deltaLEF/25))
+
+    coefs = _coefficient('CZ', interp_coord)
+    deltaCoefs = _coefficient('CZ', (alpha, beta, 0))
+    calculate_CZ = coefs[0] \
+                   + (coefs[1] - deltaCoefs[0]) * (1 - deltaLEF/25) \
+                   + coefs[4] * (deltaSB/60) \
+                   + ((CHORD_LENGTH*q) / 2*velocity) * (coefs[2] + coefs[3] * (1 - deltaLEF/25))
+
+    coefs = _coefficient('CY', interp_coord)
+    calculate_CY = coefs[0] \
+                   + (coefs[1] - coefs[0]) * (1 - deltaLEF/25) \
+                   + ((coefs[2] - coefs[0]) + (coefs[3] - coefs[1] - coefs[2] + coefs[0]) * (1 - deltaLEF/25)) * (deltaA/20) \
+                   + (coefs[4] - coefs[0]) * (deltaR/30) \
+                   + (WING_SPAN / 2*velocity) * ((coefs[5] + coefs[6] * (1 - deltaLEF/25)) * r
+                                                 + (coefs[7] + coefs[8] * (1 - deltaLEF/25))*p)
+
+    lift_coef = -calculate_CZ * cos(alpha) + calculate_CX * sin(alpha)
+    drag_coef = -calculate_CZ * sin(alpha) - calculate_CX * cos(alpha)
+
+    return (calculate_CX, calculate_CY, calculate_CZ, lift_coef, drag_coef)
 
 
-def get_aero_forces(density, velocity, alpha, beta, p, q, r, deltaE, deltaA, deltaR):
+def get_aero_forces(density, velocity, alpha, beta, p, q, r, deltaE, deltaA, deltaR, deltaLEF, deltaSB):
+    global WING_AREA
+    coefs = get_aero_force_coefficients(velocity, alpha, beta, p, q, r, deltaE, deltaA, deltaR, deltaLEF, deltaSB)
+    coefs = np.array(coefs[:3])
 
-    coefficients = derivatives(alpha, beta, deltaE, deltaA, deltaR)
-    dynamic_pressure = (1 / 2) * density * velocity**2
+    force_term = (density * (velocity**2) / 2) * WING_AREA
 
-    #X force.
-    CX_total = coefficients['cx'] + (q*CHORD_LENGTH) * coefficients['cxQ'] / (2 * velocity)
-    X_force = CX_total * dynamic_pressure * WING_AREA
+    return tuple(coefs * force_term)
 
-    #Y force.
-    CY_total = coefficients['cy'] + WING_SPAN / (2*velocity) * (coefficients['cyP']*p + coefficients['cyR']*r)
-    Y_force = CY_total * dynamic_pressure * WING_AREA
 
-    #Z force.
-    CZ_total = coefficients['cz'] + q*coefficients['czQ']*CHORD_LENGTH / (2*velocity)
-    Z_force = CZ_total * dynamic_pressure * WING_AREA
 
-    return (X_force, Y_force, Z_force)
+def get_aero_moment_coefficients(velocity, alpha, beta, p, q, r, deltaE, deltaA, deltaR, deltaLEF, deltaSB):
+    global WING_SPAN, WING_AREA, CHORD_LENGTH
 
-def get_aero_moments(density, velocity, alpha, beta, p, q, r, deltaE, deltaA, deltaR):
+    interp_coord = (alpha, beta, deltaE)
 
-    coefficients = derivatives(alpha, beta, deltaE, deltaA, deltaR)
-    dynamic_pressure = (1/2) * density * velocity**2
+    coefs = _coefficient('Cm', interp_coord)
+    deltaCoefs = _coefficient('Cm', (alpha, beta, 0))
+    calculate_Cm = coefs[0] * coefs[6] \
+                   + (coefs[1] - deltaCoefs[0]) * (1 - deltaLEF/25) \
+                   + coefs[7] * (deltaSB/60) \
+                   + (CHORD_LENGTH * q) / (2*velocity) * (coefs[2] + coefs[3] * (1 - deltaLEF/25)) \
+                   + coefs[4] \
+                   + coefs[5]
 
-    Cm_total = coefficients['cm'] + (coefficients['cmQ'] * CHORD_LENGTH * q) / 2*velocity
-    M_moment = Cm_total * dynamic_pressure * WING_AREA * CHORD_LENGTH
 
-    Cl_total = coefficients['cl'] + (coefficients['clP']*p + coefficients['clR']*r) * WING_SPAN / 2*velocity
-    L_moment = Cl_total * dynamic_pressure * WING_AREA * WING_SPAN
+    coefs = _coefficient('Cn', interp_coord)
+    deltaCoefs = _coefficient('Cn', (alpha, beta, 0))
+    calculate_Cn = coefs[0] \
+                   + (coefs[1] - deltaCoefs[0]) * (1 - deltaLEF/25) \
+                   + ((coefs[2] - deltaCoefs[0]) + (coefs[3] - coefs[1] - coefs[2] + deltaCoefs[0]) * (1 - deltaLEF/25)) * (deltaA/20) \
+                   + (coefs[4] - deltaCoefs[0]) * (deltaR/30) \
+                   + WING_SPAN / (2*velocity) * ((coefs[5] + coefs[6] * (1 - deltaLEF/25)) * r
+                                                 + (coefs[7] + coefs[8] * (1 - deltaLEF/25)) * p) \
+                   + coefs[9]
 
-    Cn_total = coefficients['cn'] + (coefficients['cnP']*p + coefficients['cnR']*r) * WING_SPAN / 2*velocity
-    N_moment = Cn_total * dynamic_pressure * WING_AREA * WING_SPAN
+    coefs = _coefficient('Cl', interp_coord)
+    deltaCoefs = _coefficient('Cl', (alpha, beta, 0))
+    calculate_Cl = coefs[0] \
+                   + (coefs[1] - deltaCoefs[0]) * (1 - deltaLEF/25) \
+                   + ((coefs[2] - deltaCoefs[0]) + (coefs[3] - coefs[1] - coefs[2] + deltaCoefs[0]) * (1 - deltaLEF/25)) * (deltaA/20) \
+                   + (coefs[4] - deltaCoefs[0]) * (deltaR/30) \
+                   + WING_SPAN / (2*velocity) * ((coefs[5] + coefs[6] * (1 - deltaLEF/25)) * r
+                                                 + (coefs[7] + coefs[8] * (1 - deltaLEF/25)) * p) \
+                   + coefs[9]
 
-    return (L_moment, M_moment, N_moment)
+    return (calculate_Cl, calculate_Cm, calculate_Cn)
+
+
+
+
+def get_aero_moments(density, velocity, alpha, beta, p, q, r, deltaE, deltaA, deltaR, deltaLEF, deltaSB):
+    global WING_SPAN, CHORD_LENGTH, WING_AREA
+    coefs = get_aero_moment_coefficients(velocity, alpha, beta, p, q, r, deltaE, deltaA, deltaR, deltaLEF, deltaSB)
+    coefs = np.array(coefs)
+
+    dynamic_pressure = density * (velocity**2) / 2
+    dynamic_force = dynamic_pressure * WING_AREA
+    multiply_terms = np.array([dynamic_force * WING_SPAN, dynamic_force * CHORD_LENGTH, dynamic_force * WING_SPAN])
+
+    return tuple(np.multiply(coefs, multiply_terms))
